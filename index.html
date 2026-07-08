@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Import & Logistics Discovery</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#ffffff; --line:#e2e8f2; --ink:#1a2233;
+    --muted:#63708a; --brand:#2f6bff; --brand2:#12b886; --err:#e03131;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(160deg,#f4f6fb,#eaf0fb);color:var(--ink);
+    font:16px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:32px 16px}
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 4px}
+  .sub{color:var(--muted);margin:0 0 24px}
+  form{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;
+    box-shadow:0 6px 24px rgba(20,40,90,.06)}
+  .q{padding:16px 0;border-bottom:1px solid var(--line)}
+  .q:last-of-type{border-bottom:0}
+  label{display:block;font-weight:600;margin-bottom:8px}
+  .n{color:var(--brand);font-weight:700;margin-right:6px}
+  input,textarea{width:100%;background:#f8fafd;border:1px solid var(--line);color:var(--ink);
+    border-radius:10px;padding:11px 12px;font:inherit;resize:vertical}
+  input:focus,textarea:focus{outline:0;border-color:var(--brand);box-shadow:0 0 0 3px #2f6bff26;background:#fff}
+  textarea{min-height:70px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .row>div{flex:1;min-width:200px}
+  button{margin-top:20px;width:100%;background:linear-gradient(90deg,var(--brand),var(--brand2));
+    color:#fff;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:800;cursor:pointer}
+  button:disabled{opacity:.6;cursor:default}
+  .note{color:var(--muted);font-size:13px;margin-top:10px;text-align:center}
+  .ok{background:#e6faf3;border:1px solid #12b886;color:#0b7a58;padding:16px;border-radius:12px;display:none}
+  .bad{color:var(--err);text-align:center;margin-top:10px;display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Import &amp; Logistics — Discovery</h1>
+  <p class="sub">A few questions about how imports actually run for you. Takes ~10 minutes.</p>
+
+  <div id="ok" class="ok">✅ Thanks — your answers were recorded. We'll be in touch.</div>
+
+  <form id="f">
+    <div class="row">
+      <div><label>Your name</label><input name="Name" autocomplete="name"></div>
+      <div><label>Company</label><input name="Company"></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <div><label>Email</label><input name="Email" type="email" autocomplete="email"></div>
+      <div><label>Phone</label><input name="Phone" autocomplete="tel"></div>
+    </div>
+  </form>
+</div>
+
+<script>
+// ⬇️ PASTE YOUR APPS SCRIPT WEB APP URL HERE
+const ENDPOINT = "PASTE_YOUR_WEB_APP_URL_HERE";
+
+const QUESTIONS = [
+  "How many shipments/containers do you import a month, and through which ports?",
+  "Wearing both the procurement and logistics hats — where does the handoff between buying and moving bite you most?",
+  "What does a bad week look like — what actually eats your day when an import goes sideways?",
+  "Walk me through your most recent import, from raising the PO to goods in your warehouse — where did it stall?",
+  "How do you usually find out something's gone wrong — does someone tell you, or do you discover it late?",
+  "When a shipment is stuck, who do you have to chase, and how many calls/emails does it take to sort?",
+  "Tell me about the last shipment that genuinely cost you money because of a delay — what happened?",
+  "When did you last pay demurrage, detention, or port storage — and roughly how much over the last year?",
+  "Do you see those charges itemised, or are they buried inside the CHA/forwarder bill?",
+  "Have you ever been billed a charge you were sure was wrong — what did you do, and did you get the money back?",
+  "Who checks that freight and D&D invoices are correct before you pay them?",
+  "On the buying side — when a supplier ships late or short, how does that ripple into your costs or stockouts?",
+  "Of all of this — late suppliers, customs holds, demurrage, wrong invoices, stock — which one keeps you up at night, and why that one?",
+  "How do you track all this today — spreadsheet, email, forwarder portal, ERP? Can you show me?",
+  "What have you rigged up yourself to cope — a tracker, a checklist, a person whose job is to chase?",
+  "Have you ever looked for or paid for software to fix any of this? What happened to it, or why'd you stop?",
+  "When these delays or charges cost money, whose number takes the hit — yours, finance's, the MD's?",
+  "If you wanted to buy a tool to fix the worst of it, who signs the cheque — and what would it have to prove first?",
+  "Would you let me take a few of your recent freight/D&D invoices and check — free, no obligation — whether you were overcharged?",
+  "Who else you know lives this exact pain that I should talk to?"
+];
+
+const f = document.getElementById('f');
+QUESTIONS.forEach((q,i)=>{
+  const d=document.createElement('div');d.className='q';
+  d.innerHTML=`<label><span class="n">Q${i+1}</span>${q}</label>
+    <textarea name="Q${i+1}"></textarea>`;
+  f.appendChild(d);
+});
+const btn=document.createElement('button');btn.type='submit';btn.textContent='Submit answers';
+const bad=document.createElement('div');bad.className='bad';bad.id='bad';bad.textContent='Something went wrong — please try again.';
+const note=document.createElement('div');note.className='note';note.textContent='Your responses are saved privately to our sheet.';
+f.append(btn,bad,note);
+
+f.addEventListener('submit',async e=>{
+  e.preventDefault();
+  btn.disabled=true;btn.textContent='Sending…';document.getElementById('bad').style.display='none';
+  const data=Object.fromEntries(new FormData(f).entries());
+  data.timestamp=new Date().toISOString();
+  try{
+    await fetch(ENDPOINT,{method:'POST',mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(data)});
+    f.style.display='none';document.getElementById('ok').style.display='block';
+    window.scrollTo({top:0,behavior:'smooth'});
+  }catch(err){
+    btn.disabled=false;btn.textContent='Submit answers';
+    document.getElementById('bad').style.display='block';
+  }
+});
+</script>
+</body>
+</html>
